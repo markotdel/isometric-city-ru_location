@@ -1753,52 +1753,78 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     const south = hasRoad(gridX + 1, gridY);  // bottom-right edge
     const west = hasRoad(gridX, gridY + 1);   // bottom-left edge
     
-    // Road width
-    const roadW = w * 0.15;
-    const roadH = h * 0.15;
+    // Road width - slightly narrower for cleaner look
+    const roadW = w * 0.12;
+    const roadH = h * 0.12;
+    
+    // Edge stop distance - stop roads before tile edges to prevent overlap
+    // Using 0.88 means roads stop at 88% of the way to the edge
+    const edgeStop = 0.88;
     
     // Draw road segments to connected edges
     ctx.fillStyle = '#4a4a4a';
     
-    // North segment (to top-left)
+    // Helper to calculate stop position: center + (edge - center) * edgeStop
+    // North edge: (x + w * 0.25, y + h * 0.25)
+    // East edge: (x + w * 0.75, y + h * 0.25)
+    // South edge: (x + w * 0.75, y + h * 0.75)
+    // West edge: (x + w * 0.25, y + h * 0.75)
+    
+    // North segment (to top-left) - stops before edge
     if (north) {
+      const edgeX = x + w * 0.25;
+      const edgeY = y + h * 0.25;
+      const stopX = cx + (edgeX - cx) * edgeStop;
+      const stopY = cy + (edgeY - cy) * edgeStop;
       ctx.beginPath();
       ctx.moveTo(cx - roadW * 0.7, cy - roadH * 0.7);
-      ctx.lineTo(x + w * 0.25 - roadW * 0.5, y + h * 0.25 - roadH * 0.5);
-      ctx.lineTo(x + w * 0.25 + roadW * 0.5, y + h * 0.25 + roadH * 0.5);
+      ctx.lineTo(stopX - roadW * 0.5, stopY - roadH * 0.5);
+      ctx.lineTo(stopX + roadW * 0.5, stopY + roadH * 0.5);
       ctx.lineTo(cx + roadW * 0.7, cy + roadH * 0.7);
       ctx.closePath();
       ctx.fill();
     }
     
-    // East segment (to top-right)
+    // East segment (to top-right) - stops before edge
     if (east) {
+      const edgeX = x + w * 0.75;
+      const edgeY = y + h * 0.25;
+      const stopX = cx + (edgeX - cx) * edgeStop;
+      const stopY = cy + (edgeY - cy) * edgeStop;
       ctx.beginPath();
       ctx.moveTo(cx + roadW * 0.7, cy - roadH * 0.7);
-      ctx.lineTo(x + w * 0.75 + roadW * 0.5, y + h * 0.25 - roadH * 0.5);
-      ctx.lineTo(x + w * 0.75 - roadW * 0.5, y + h * 0.25 + roadH * 0.5);
+      ctx.lineTo(stopX + roadW * 0.5, stopY - roadH * 0.5);
+      ctx.lineTo(stopX - roadW * 0.5, stopY + roadH * 0.5);
       ctx.lineTo(cx - roadW * 0.7, cy + roadH * 0.7);
       ctx.closePath();
       ctx.fill();
     }
     
-    // South segment (to bottom-right)
+    // South segment (to bottom-right) - stops before edge
     if (south) {
+      const edgeX = x + w * 0.75;
+      const edgeY = y + h * 0.75;
+      const stopX = cx + (edgeX - cx) * edgeStop;
+      const stopY = cy + (edgeY - cy) * edgeStop;
       ctx.beginPath();
       ctx.moveTo(cx + roadW * 0.7, cy + roadH * 0.7);
-      ctx.lineTo(x + w * 0.75 + roadW * 0.5, y + h * 0.75 + roadH * 0.5);
-      ctx.lineTo(x + w * 0.75 - roadW * 0.5, y + h * 0.75 - roadH * 0.5);
+      ctx.lineTo(stopX + roadW * 0.5, stopY + roadH * 0.5);
+      ctx.lineTo(stopX - roadW * 0.5, stopY - roadH * 0.5);
       ctx.lineTo(cx - roadW * 0.7, cy - roadH * 0.7);
       ctx.closePath();
       ctx.fill();
     }
     
-    // West segment (to bottom-left)
+    // West segment (to bottom-left) - stops before edge
     if (west) {
+      const edgeX = x + w * 0.25;
+      const edgeY = y + h * 0.75;
+      const stopX = cx + (edgeX - cx) * edgeStop;
+      const stopY = cy + (edgeY - cy) * edgeStop;
       ctx.beginPath();
       ctx.moveTo(cx - roadW * 0.7, cy + roadH * 0.7);
-      ctx.lineTo(x + w * 0.25 - roadW * 0.5, y + h * 0.75 + roadH * 0.5);
-      ctx.lineTo(x + w * 0.25 + roadW * 0.5, y + h * 0.75 - roadH * 0.5);
+      ctx.lineTo(stopX - roadW * 0.5, stopY + roadH * 0.5);
+      ctx.lineTo(stopX + roadW * 0.5, stopY - roadH * 0.5);
       ctx.lineTo(cx + roadW * 0.7, cy - roadH * 0.7);
       ctx.closePath();
       ctx.fill();
@@ -1814,44 +1840,65 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     ctx.closePath();
     ctx.fill();
     
-    // Draw road markings (yellow dashed lines)
+    // Draw road markings (yellow dashed lines) - shorter and cleaner
     ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([3, 3]);
+    ctx.lineCap = 'round';
+    
+    // Marking length - shorter to stay within tile boundaries
+    const markingLength = 0.75; // 75% of the way to edge stop
     
     // North marking (toward top-left)
     if (north) {
+      const edgeX = x + w * 0.25;
+      const edgeY = y + h * 0.25;
+      const stopX = cx + (edgeX - cx) * edgeStop * markingLength;
+      const stopY = cy + (edgeY - cy) * edgeStop * markingLength;
       ctx.beginPath();
-      ctx.moveTo(cx - 3, cy - 3);
-      ctx.lineTo(x + w * 0.25 - 3, y + h * 0.25 - 3);
+      ctx.moveTo(cx - 2, cy - 2);
+      ctx.lineTo(stopX - 2, stopY - 2);
       ctx.stroke();
     }
     
     // East marking (toward top-right)
     if (east) {
+      const edgeX = x + w * 0.75;
+      const edgeY = y + h * 0.25;
+      const stopX = cx + (edgeX - cx) * edgeStop * markingLength;
+      const stopY = cy + (edgeY - cy) * edgeStop * markingLength;
       ctx.beginPath();
-      ctx.moveTo(cx + 3, cy - 3);
-      ctx.lineTo(x + w * 0.75 + 3, y + h * 0.25 - 3);
+      ctx.moveTo(cx + 2, cy - 2);
+      ctx.lineTo(stopX + 2, stopY - 2);
       ctx.stroke();
     }
     
     // South marking (toward bottom-right)
     if (south) {
+      const edgeX = x + w * 0.75;
+      const edgeY = y + h * 0.75;
+      const stopX = cx + (edgeX - cx) * edgeStop * markingLength;
+      const stopY = cy + (edgeY - cy) * edgeStop * markingLength;
       ctx.beginPath();
-      ctx.moveTo(cx + 3, cy + 3);
-      ctx.lineTo(x + w * 0.75 + 3, y + h * 0.75 + 3);
+      ctx.moveTo(cx + 2, cy + 2);
+      ctx.lineTo(stopX + 2, stopY + 2);
       ctx.stroke();
     }
     
     // West marking (toward bottom-left)
     if (west) {
+      const edgeX = x + w * 0.25;
+      const edgeY = y + h * 0.75;
+      const stopX = cx + (edgeX - cx) * edgeStop * markingLength;
+      const stopY = cy + (edgeY - cy) * edgeStop * markingLength;
       ctx.beginPath();
-      ctx.moveTo(cx - 3, cy + 3);
-      ctx.lineTo(x + w * 0.25 - 3, y + h * 0.75 + 3);
+      ctx.moveTo(cx - 2, cy + 2);
+      ctx.lineTo(stopX - 2, stopY + 2);
       ctx.stroke();
     }
     
     ctx.setLineDash([]);
+    ctx.lineCap = 'butt';
   }
   
   // Draw building sprite
