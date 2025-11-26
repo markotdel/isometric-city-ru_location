@@ -1189,10 +1189,10 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
 
       let dx = 0;
       let dy = 0;
-      if (pressed.has('w') || pressed.has('arrowup')) dy -= KEY_PAN_SPEED * delta;
-      if (pressed.has('s') || pressed.has('arrowdown')) dy += KEY_PAN_SPEED * delta;
-      if (pressed.has('a') || pressed.has('arrowleft')) dx -= KEY_PAN_SPEED * delta;
-      if (pressed.has('d') || pressed.has('arrowright')) dx += KEY_PAN_SPEED * delta;
+      if (pressed.has('w') || pressed.has('arrowup')) dy += KEY_PAN_SPEED * delta;
+      if (pressed.has('s') || pressed.has('arrowdown')) dy -= KEY_PAN_SPEED * delta;
+      if (pressed.has('a') || pressed.has('arrowleft')) dx += KEY_PAN_SPEED * delta;
+      if (pressed.has('d') || pressed.has('arrowright')) dx -= KEY_PAN_SPEED * delta;
 
       if (dx !== 0 || dy !== 0) {
         setOffset(prev => ({
@@ -1781,8 +1781,8 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
       ctx.stroke();
     }
     
-    // Draw zone border with dashed line
-    if (tile.zone !== 'none') {
+    // Draw zone border with dashed line (hide when zoomed out)
+    if (tile.zone !== 'none' && currentZoom >= 0.95) {
       ctx.strokeStyle = tile.zone === 'residential' ? '#22c55e' : 
                         tile.zone === 'commercial' ? '#3b82f6' : '#f59e0b';
       ctx.lineWidth = 1.5;
@@ -1805,7 +1805,7 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     return grid[gridY][gridX].building.type === 'road';
   }
   
-  // Draw road with proper adjacency and markings
+  // Draw road with proper adjacency, markings, and sidewalks
   function drawRoad(ctx: CanvasRenderingContext2D, x: number, y: number, gridX: number, gridY: number) {
     const w = TILE_WIDTH;
     const h = TILE_HEIGHT;
@@ -1822,17 +1822,14 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     const roadW = w * 0.14;
     const roadH = h * 0.14;
     
+    // Sidewalk configuration
+    const sidewalkWidth = w * 0.08; // Width of the sidewalk strip
+    const sidewalkColor = '#9ca3af'; // Light gray for sidewalk
+    const curbColor = '#6b7280'; // Darker gray for curb edge
+    
     // Edge stop distance - extend roads almost to the edge for better connection
     // Using 0.98 means roads extend to 98% of the way to the edge
     const edgeStop = 0.98;
-    
-    // Draw road segments to connected edges
-    // The edges align with the isometric diamond gridlines:
-    // North (top-left): from (x, y + h/2) to (x + w/2, y) - midpoint at (x + w/4, y + h/4)
-    // East (top-right): from (x + w/2, y) to (x + w, y + h/2) - midpoint at (x + 3w/4, y + h/4)
-    // South (bottom-right): from (x + w, y + h/2) to (x + w/2, y + h) - midpoint at (x + 3w/4, y + 3h/4)
-    // West (bottom-left): from (x + w/2, y + h) to (x, y + h/2) - midpoint at (x + w/4, y + 3h/4)
-    ctx.fillStyle = '#4a4a4a';
     
     // Calculate edge midpoints (where gridlines meet)
     const northEdgeX = x + w * 0.25;
@@ -1857,6 +1854,130 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     
     // Perpendicular vectors for road width (rotated 90 degrees)
     const getPerp = (dx: number, dy: number) => ({ nx: -dy, ny: dx });
+    
+    // ============================================
+    // DRAW SIDEWALKS FIRST (underneath the road)
+    // ============================================
+    // Sidewalks appear on edges where there's NO adjacent road
+    // They run along the outer perimeter of the tile edge
+    
+    // Diamond corner points
+    const topCorner = { x: x + w / 2, y: y };
+    const rightCorner = { x: x + w, y: y + h / 2 };
+    const bottomCorner = { x: x + w / 2, y: y + h };
+    const leftCorner = { x: x, y: y + h / 2 };
+    
+    // Draw sidewalk helper - draws a strip along an edge
+    const drawSidewalkEdge = (
+      startX: number, startY: number, 
+      endX: number, endY: number,
+      inwardDx: number, inwardDy: number
+    ) => {
+      const swWidth = sidewalkWidth;
+      
+      // Draw curb (darker line at outer edge)
+      ctx.strokeStyle = curbColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      
+      // Draw sidewalk fill
+      ctx.fillStyle = sidewalkColor;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.lineTo(endX + inwardDx * swWidth, endY + inwardDy * swWidth);
+      ctx.lineTo(startX + inwardDx * swWidth, startY + inwardDy * swWidth);
+      ctx.closePath();
+      ctx.fill();
+    };
+    
+    // North edge sidewalk (top-left edge: leftCorner to topCorner)
+    // Inward direction points toward center-right and down
+    if (!north) {
+      const inwardDx = 0.707; // ~45 degrees inward
+      const inwardDy = 0.707;
+      drawSidewalkEdge(leftCorner.x, leftCorner.y, topCorner.x, topCorner.y, inwardDx, inwardDy);
+    }
+    
+    // East edge sidewalk (top-right edge: topCorner to rightCorner)
+    // Inward direction points toward center-left and down
+    if (!east) {
+      const inwardDx = -0.707;
+      const inwardDy = 0.707;
+      drawSidewalkEdge(topCorner.x, topCorner.y, rightCorner.x, rightCorner.y, inwardDx, inwardDy);
+    }
+    
+    // South edge sidewalk (bottom-right edge: rightCorner to bottomCorner)
+    // Inward direction points toward center-left and up
+    if (!south) {
+      const inwardDx = -0.707;
+      const inwardDy = -0.707;
+      drawSidewalkEdge(rightCorner.x, rightCorner.y, bottomCorner.x, bottomCorner.y, inwardDx, inwardDy);
+    }
+    
+    // West edge sidewalk (bottom-left edge: bottomCorner to leftCorner)
+    // Inward direction points toward center-right and up
+    if (!west) {
+      const inwardDx = 0.707;
+      const inwardDy = -0.707;
+      drawSidewalkEdge(bottomCorner.x, bottomCorner.y, leftCorner.x, leftCorner.y, inwardDx, inwardDy);
+    }
+    
+    // Draw corner sidewalk pieces for non-adjacent edges that meet
+    const cornerRadius = sidewalkWidth * 1.2;
+    ctx.fillStyle = sidewalkColor;
+    
+    // Top corner (where north and east edges meet) - only if both don't have roads
+    if (!north && !east) {
+      ctx.beginPath();
+      ctx.moveTo(topCorner.x, topCorner.y);
+      ctx.lineTo(topCorner.x + cornerRadius * 0.707, topCorner.y + cornerRadius * 0.707);
+      ctx.lineTo(topCorner.x, topCorner.y + cornerRadius);
+      ctx.lineTo(topCorner.x - cornerRadius * 0.707, topCorner.y + cornerRadius * 0.707);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    // Right corner (where east and south edges meet)
+    if (!east && !south) {
+      ctx.beginPath();
+      ctx.moveTo(rightCorner.x, rightCorner.y);
+      ctx.lineTo(rightCorner.x - cornerRadius * 0.707, rightCorner.y + cornerRadius * 0.707);
+      ctx.lineTo(rightCorner.x - cornerRadius, rightCorner.y);
+      ctx.lineTo(rightCorner.x - cornerRadius * 0.707, rightCorner.y - cornerRadius * 0.707);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    // Bottom corner (where south and west edges meet)
+    if (!south && !west) {
+      ctx.beginPath();
+      ctx.moveTo(bottomCorner.x, bottomCorner.y);
+      ctx.lineTo(bottomCorner.x - cornerRadius * 0.707, bottomCorner.y - cornerRadius * 0.707);
+      ctx.lineTo(bottomCorner.x, bottomCorner.y - cornerRadius);
+      ctx.lineTo(bottomCorner.x + cornerRadius * 0.707, bottomCorner.y - cornerRadius * 0.707);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    // Left corner (where west and north edges meet)
+    if (!west && !north) {
+      ctx.beginPath();
+      ctx.moveTo(leftCorner.x, leftCorner.y);
+      ctx.lineTo(leftCorner.x + cornerRadius * 0.707, leftCorner.y - cornerRadius * 0.707);
+      ctx.lineTo(leftCorner.x + cornerRadius, leftCorner.y);
+      ctx.lineTo(leftCorner.x + cornerRadius * 0.707, leftCorner.y + cornerRadius * 0.707);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+    // ============================================
+    // DRAW ROAD SEGMENTS
+    // ============================================
+    ctx.fillStyle = '#4a4a4a';
     
     // North segment (to top-left) - aligned with gridline
     if (north) {
@@ -2125,7 +2246,7 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
       } else if (BUILDING_IMAGES[buildingType]) {
         imageSrc = BUILDING_IMAGES[buildingType];
         if (buildingType === 'power_plant') sizeMultiplier = 2.25;
-        else if (buildingType === 'stadium') sizeMultiplier = 2.8;
+        else if (buildingType === 'stadium') sizeMultiplier = 1.372;
         else if (buildingType === 'space_program') sizeMultiplier = 2.94;
         else if (buildingType === 'university') sizeMultiplier = 2.8;
         else if (buildingType === 'hospital') sizeMultiplier = 2.25;
@@ -2423,8 +2544,15 @@ export default function Game() {
   const { state, setTool, setActivePanel } = useGame();
   const [overlayMode, setOverlayMode] = useState<OverlayMode>('none');
   const [selectedTile, setSelectedTile] = useState<{ x: number; y: number } | null>(null);
+  const isInitialMount = useRef(true);
   
+  // Auto-set overlay when selecting utility tools (but not on initial page load)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
     if (state.selectedTool === 'power_plant') {
       setOverlayMode('power');
     } else if (state.selectedTool === 'water_tower') {

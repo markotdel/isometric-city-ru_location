@@ -70,7 +70,7 @@ const BUILDING_IMAGES: Partial<Record<BuildingType, { src: string; tileWidth: nu
   water_tower: { src: '/assets/buildings/watertower.png', tileWidth: 1, tileHeight: 1 },
   power_plant: { src: '/assets/buildings/powerplant.png', tileWidth: 2, tileHeight: 2 },
   // Special buildings
-  stadium: { src: '/assets/buildings/stadium.png', tileWidth: 3, tileHeight: 3 },
+  stadium: { src: '/assets/buildings/stadium.png', tileWidth: 3, tileHeight: 3, scale: 0.49 },
   space_program: { src: '/assets/buildings/space.png', tileWidth: 3, tileHeight: 3 },
 };
 

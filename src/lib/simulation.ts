@@ -458,6 +458,39 @@ function calculateServiceCoverage(grid: Tile[][], size: number): ServiceCoverage
   return services;
 }
 
+// Check if a multi-tile building can be SPAWNED at the given position
+// This is stricter than canPlaceMultiTileBuilding - it doesn't allow 'empty' tiles
+// because those are placeholders for existing multi-tile buildings
+function canSpawnMultiTileBuilding(
+  grid: Tile[][],
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  zone: ZoneType,
+  gridSize: number
+): boolean {
+  if (x + width > gridSize || y + height > gridSize) {
+    return false;
+  }
+  
+  for (let dy = 0; dy < height; dy++) {
+    for (let dx = 0; dx < width; dx++) {
+      const tile = grid[y + dy]?.[x + dx];
+      if (!tile) return false;
+      // Must be in the same zone
+      if (tile.zone !== zone) return false;
+      // Can only spawn on grass or trees
+      // NOT 'empty' - those are placeholders for existing multi-tile buildings
+      if (tile.building.type !== 'grass' && tile.building.type !== 'tree') {
+        return false;
+      }
+    }
+  }
+  
+  return true;
+}
+
 // Check if a tile has road access by looking for a path through the same zone
 // within a limited distance. This allows large contiguous zones to develop even
 // when only the perimeter touches a road.
@@ -557,7 +590,7 @@ function evolveBuilding(grid: Tile[][], x: number, y: number, services: ServiceC
   ) / 4;
 
   const targetLevel = Math.min(5, Math.max(1, Math.floor(
-    (landValue / 24) + (serviceCoverage / 28) + (building.age / 90)
+    (landValue / 24) + (serviceCoverage / 28) + (building.age / 60)
   )));
 
   const targetIndex = Math.min(buildingList.length - 1, targetLevel - 1);
@@ -566,7 +599,7 @@ function evolveBuilding(grid: Tile[][], x: number, y: number, services: ServiceC
   let anchorY = y;
 
   // Attempt to upgrade footprint/density when the tile is mature enough
-  if (building.age > 20 && (targetLevel > building.level || targetType !== building.type) && Math.random() < 0.12) {
+  if (building.age > 12 && (targetLevel > building.level || targetType !== building.type) && Math.random() < 0.18) {
     const size = getBuildingSize(targetType);
     const footprint = findFootprintIncludingTile(grid, x, y, size.width, size.height, zone, grid.length);
 
@@ -649,8 +682,8 @@ function calculateStats(grid: Tile[][], size: number, budget: Budget, taxRate: n
   // Calculate demand
   const jobsRatio = jobs > 0 ? population / jobs : 2;
   const residentialDemand = Math.min(100, Math.max(-100, (jobs - population * 0.7) / 18));
-  const commercialDemand = Math.min(100, Math.max(-100, (population * 0.3 - jobs * 0.3) / 6));
-  const industrialDemand = Math.min(100, Math.max(-100, (population * 0.2 - jobs * 0.4) / 3.5));
+  const commercialDemand = Math.min(100, Math.max(-100, (population * 0.3 - jobs * 0.3) / 4));
+  const industrialDemand = Math.min(100, Math.max(-100, (population * 0.2 - jobs * 0.4) / 2.5));
 
   // Calculate income and expenses
   const income = Math.floor(population * taxRate * 0.1 + jobs * taxRate * 0.05);
@@ -969,9 +1002,9 @@ export function simulateTick(state: GameState): GameState {
             tile.zone === 'commercial' ? COMMERCIAL_BUILDINGS : INDUSTRIAL_BUILDINGS;
           const candidate = buildingList[0];
           const candidateSize = getBuildingSize(candidate);
-          const footprint = findFootprintIncludingTile(newGrid, x, y, candidateSize.width, candidateSize.height, tile.zone, size);
-          if (footprint) {
-            applyBuildingFootprint(newGrid, footprint.originX, footprint.originY, candidate, tile.zone, 1, services);
+          // Use stricter spawn check that doesn't allow 'empty' tiles (prevents building overlap)
+          if (canSpawnMultiTileBuilding(newGrid, x, y, candidateSize.width, candidateSize.height, tile.zone, size)) {
+            applyBuildingFootprint(newGrid, x, y, candidate, tile.zone, 1, services);
           }
         }
       } else if (tile.zone !== 'none' && tile.building.type !== 'grass') {
