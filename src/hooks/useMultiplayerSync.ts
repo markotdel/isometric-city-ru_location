@@ -98,10 +98,8 @@ export function useMultiplayerSync() {
   // Apply a remote action to the local game state
   const applyRemoteAction = useCallback((action: GameAction) => {
     // Guard against null/undefined actions (can happen with malformed broadcasts)
-    if (!action || !action.type) {
-      console.warn('[useMultiplayerSync] Received invalid action:', action);
-      return;
-    }
+    if (!action) return;
+    if (!(action as any).type) return;
     
     switch (action.type) {
       case 'place': {

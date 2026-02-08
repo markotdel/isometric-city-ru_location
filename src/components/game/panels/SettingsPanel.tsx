@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { msg, useMessages } from 'gt-next';
+import { msg, useMessages } from "@/lib/gt";
 import { useGame, DayNightMode } from '@/context/GameContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { SpriteTestPanel } from './SpriteTestPanel';
 import { SavedCityMeta } from '@/types/game';
-import { LocaleSelector } from 'gt-next';
+import { LocaleSelector } from "@/lib/gt";
 
 // Translatable UI labels
 const UI_LABELS = {

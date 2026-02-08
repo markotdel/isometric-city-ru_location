@@ -17,7 +17,7 @@ import {
   updatePlayerCount,
   CitySizeLimitError,
 } from './database';
-import { msg } from 'gt-next';
+import { msg } from "@/lib/gt";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;

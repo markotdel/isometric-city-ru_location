@@ -11,7 +11,9 @@ import { getSpritePack, getSpriteCoords, DEFAULT_SPRITE_PACK_ID } from '@/lib/re
 import { SavedCityMeta, GameState } from '@/types/game';
 import { decompressFromUTF16, compressToUTF16 } from 'lz-string';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
-import { T } from 'gt-next';
+import { useLocale } from 'gt-next/client';
+import en from '@/locales/en.json';
+import ru from '@/locales/ru.json';
 import { Users, X } from 'lucide-react';
 
 const STORAGE_KEY = 'isocity-game-state';
@@ -20,6 +22,20 @@ const SAVED_CITIES_INDEX_KEY = 'isocity-saved-cities-index';
 // Background color to filter from sprite sheets (red)
 const BACKGROUND_COLOR = { r: 255, g: 0, b: 0 };
 const COLOR_THRESHOLD = 155;
+
+// Landing page UI labels (English source strings)
+const LANDING_LABELS = {
+  continue: 'Continue',
+  newGame: 'New Game',
+  coop: 'Co-op',
+  loadExample: 'Load Example',
+  madeWithCursor: 'Made with Cursor',
+  openGithub: 'Open GitHub',
+  savedCities: 'Saved Cities',
+  deleteCity: 'Delete city',
+  pop: 'Pop',
+} as const;
+
 
 // Filter red background from sprite sheet
 function filterBackgroundColor(img: HTMLImageElement): HTMLCanvasElement {
@@ -275,7 +291,7 @@ function SpriteGallery({ count = 16, cols = 4, cellSize = 120 }: { count?: numbe
 }
 
 // Saved City Card Component
-function SavedCityCard({ city, onLoad, onDelete }: { city: SavedCityMeta; onLoad: () => void; onDelete?: () => void }) {
+function SavedCityCard({ city, onLoad, onDelete, t }: { city: SavedCityMeta; onLoad: () => void; onDelete?: () => void; t: (s: string) => string }) {
   return (
     <div className="relative group">
       <button
@@ -288,12 +304,12 @@ function SavedCityCard({ city, onLoad, onDelete }: { city: SavedCityMeta; onLoad
           </h3>
           {city.roomCode && (
             <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded shrink-0">
-              Co-op
+              {t(LANDING_LABELS.coop)}
             </span>
           )}
         </div>
         <div className="flex items-center gap-3 mt-1 text-xs text-white/50">
-          <span>Pop: {city.population.toLocaleString()}</span>
+          <span>{t(LANDING_LABELS.pop)}: {city.population.toLocaleString()}</span>
           <span>${city.money.toLocaleString()}</span>
           {city.roomCode && <span className="text-blue-400/60">{city.roomCode}</span>}
         </div>
@@ -305,7 +321,7 @@ function SavedCityCard({ city, onLoad, onDelete }: { city: SavedCityMeta; onLoad
             onDelete();
           }}
           className="absolute top-1/2 -translate-y-1/2 right-1.5 p-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-red-500/20 text-white/40 hover:text-red-400 rounded transition-all duration-200"
-          title="Delete city"
+          title={t(LANDING_LABELS.deleteCity)}
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -317,6 +333,9 @@ function SavedCityCard({ city, onLoad, onDelete }: { city: SavedCityMeta; onLoad
 const SAVED_CITY_PREFIX = 'isocity-city-';
 
 export default function HomePage() {
+  const locale = useLocale();
+  const dict: Record<string, string> = (locale === 'ru' ? (ru as any) : (en as any)) as any;
+  const t = useMemo(() => (s: string) => (dict[s] ?? s), [dict]);
   const [showGame, setShowGame] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [savedCities, setSavedCities] = useState<SavedCityMeta[]>([]);
@@ -446,7 +465,7 @@ export default function HomePage() {
   if (isChecking) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-        <div className="text-white/60"><T>Loading...</T></div>
+        <div className="text-white/60">Loading...</div>
       </main>
     );
   }
@@ -492,18 +511,16 @@ export default function HomePage() {
               onClick={() => setShowGame(true)}
               className="w-full py-4 sm:py-6 text-lg sm:text-xl font-light tracking-wide bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-none transition-all duration-300"
             >
-              {hasSaved ? <T>Continue</T> : <T>New Game</T>}
+              {hasSaved ? t(LANDING_LABELS.continue) : t(LANDING_LABELS.newGame)}
             </Button>
-
-            <Button
+            
+            <Button 
               onClick={() => setShowCoopModal(true)}
               variant="outline"
               className="w-full py-4 sm:py-6 text-lg sm:text-xl font-light tracking-wide bg-white/5 hover:bg-white/15 text-white/60 hover:text-white border border-white/15 rounded-none transition-all duration-300"
-            >
-              <T>Co-op</T>
-            </Button>
-
-            <Button
+            >{t(LANDING_LABELS.coop)}</Button>
+            
+            <Button 
               onClick={async () => {
                 // Clear any room code from URL to prevent multiplayer conflicts
                 if (window.location.search.includes('room=')) {
@@ -523,7 +540,7 @@ export default function HomePage() {
               variant="outline"
               className="w-full py-4 sm:py-6 text-lg sm:text-xl font-light tracking-wide bg-transparent hover:bg-white/10 text-white/40 hover:text-white/60 border border-white/10 rounded-none transition-all duration-300"
             >
-              <T>Load Example</T>
+              Load Example
             </Button>
             <div className="flex items-start justify-between w-full">
               <div className="flex flex-col">
@@ -533,7 +550,7 @@ export default function HomePage() {
                   rel="noopener noreferrer"
                   className="text-left py-2 text-sm font-light tracking-wide text-white/40 hover:text-white/70 transition-colors duration-200"
                 >
-                  <T>Made with Cursor</T>
+	                  {t(LANDING_LABELS.madeWithCursor)}
                 </a>
                 <a
                   href="https://github.com/amilich/isometric-city"
@@ -541,7 +558,7 @@ export default function HomePage() {
                   rel="noopener noreferrer"
                   className="text-left py-2 text-sm font-light tracking-wide text-white/40 hover:text-white/70 transition-colors duration-200"
                 >
-                  <T>Open GitHub</T>
+	                  {t(LANDING_LABELS.openGithub)}
                 </a>
               </div>
               <LanguageSelector variant="ghost" className="text-white/40 hover:text-white/70 hover:bg-white/10" />
@@ -551,19 +568,20 @@ export default function HomePage() {
           {/* Saved Cities - scrollable area takes remaining space */}
           {savedCities.length > 0 && (
             <div className="w-full max-w-xs mt-3 sm:mt-4 flex-1 min-h-0 flex flex-col">
-              <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2 flex-shrink-0">
-                <T>Saved Cities</T>
-              </h2>
+	              <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2 flex-shrink-0">
+	                {t(LANDING_LABELS.savedCities)}
+	              </h2>
               <div 
                 className="flex flex-col gap-2 flex-1 overflow-y-auto overscroll-y-contain"
                 style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
               >
                 {savedCities.slice(0, 5).map((city) => (
-                  <SavedCityCard
+	                  <SavedCityCard
                     key={city.id}
                     city={city}
                     onLoad={() => loadSavedCity(city)}
                     onDelete={() => deleteSavedCity(city)}
+	                    t={t}
                   />
                 ))}
               </div>
@@ -601,16 +619,14 @@ export default function HomePage() {
                 onClick={() => setShowGame(true)}
                 className="w-64 py-8 text-2xl font-light tracking-wide bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-none transition-all duration-300"
               >
-                {hasSaved ? <T>Continue</T> : <T>New Game</T>}
+                {hasSaved ? t(LANDING_LABELS.continue) : t(LANDING_LABELS.newGame)}
               </Button>
-              <Button
+              <Button 
                 onClick={() => setShowCoopModal(true)}
                 variant="outline"
                 className="w-64 py-8 text-2xl font-light tracking-wide bg-white/5 hover:bg-white/15 text-white/60 hover:text-white border border-white/15 rounded-none transition-all duration-300"
-              >
-                <T>Co-op</T>
-              </Button>
-              <Button
+              >{t(LANDING_LABELS.coop)}</Button>
+              <Button 
                 onClick={async () => {
                   // Clear any room code from URL to prevent multiplayer conflicts
                   if (window.location.search.includes('room=')) {
@@ -630,7 +646,7 @@ export default function HomePage() {
                 variant="outline"
                 className="w-64 py-8 text-2xl font-light tracking-wide bg-transparent hover:bg-white/10 text-white/40 hover:text-white/60 border border-white/10 rounded-none transition-all duration-300"
               >
-                <T>Load Example</T>
+                Load Example
               </Button>
               <div className="flex items-start justify-between w-64">
                 <div className="flex flex-col">
@@ -640,7 +656,7 @@ export default function HomePage() {
                     rel="noopener noreferrer"
                     className="text-left py-2 text-sm font-light tracking-wide text-white/40 hover:text-white/70 transition-colors duration-200"
                   >
-                    <T>Made with Cursor</T>
+	                    {t(LANDING_LABELS.madeWithCursor)}
                   </a>
                   <a
                     href="https://github.com/amilich/isometric-city"
@@ -648,7 +664,7 @@ export default function HomePage() {
                     rel="noopener noreferrer"
                     className="text-left py-2 text-sm font-light tracking-wide text-white/40 hover:text-white/70 transition-colors duration-200"
                   >
-                    <T>Open GitHub</T>
+	                    {t(LANDING_LABELS.openGithub)}
                   </a>
                 </div>
                 <LanguageSelector variant="ghost" className="text-white/40 hover:text-white/70 hover:bg-white/10" />
@@ -658,9 +674,9 @@ export default function HomePage() {
             {/* Saved Cities */}
             {savedCities.length > 0 && (
               <div className="w-64">
-                <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">
-                  <T>Saved Cities</T>
-                </h2>
+	                <h2 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">
+	                  {t(LANDING_LABELS.savedCities)}
+	                </h2>
                 <div 
                   className="flex flex-col gap-2 max-h-64 overflow-y-auto overscroll-y-contain"
                   style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
@@ -671,6 +687,7 @@ export default function HomePage() {
                       city={city}
                       onLoad={() => loadSavedCity(city)}
                       onDelete={() => deleteSavedCity(city)}
+	                    t={t}
                     />
                   ))}
                 </div>

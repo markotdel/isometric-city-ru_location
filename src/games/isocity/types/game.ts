@@ -2,7 +2,7 @@
  * IsoCity Game State Types
  */
 
-import { msg } from 'gt-next';
+import { msg } from "@/lib/gt";
 import { Building } from './buildings';
 import { ZoneType } from './zones';
 import { Stats, Budget, CityEconomy, HistoryPoint } from './economy';

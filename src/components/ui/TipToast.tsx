@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { X, Lightbulb, SkipForward, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { T, useGT, useMessages } from 'gt-next';
+import { T, useGT, useMessages } from "@/lib/gt";
 
 export interface TipToastProps {
   message: string;

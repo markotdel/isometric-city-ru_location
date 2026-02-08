@@ -6,7 +6,7 @@ import { Tool } from '@/types/game';
 import { useMobile } from '@/hooks/useMobile';
 import { MobileToolbar } from '@/components/mobile/MobileToolbar';
 import { MobileTopBar } from '@/components/mobile/MobileTopBar';
-import { msg, useMessages, useGT } from 'gt-next';
+import { msg, useMessages, useGT } from "@/lib/gt";
 
 // Import shadcn components
 import { TooltipProvider } from '@/components/ui/tooltip';

@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { msg } from 'gt-next';
-import { useMessages } from 'gt-next';
+import { msg } from "@/lib/gt";
+import { useMessages } from "@/lib/gt";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {

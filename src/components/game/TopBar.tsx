@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { msg, useMessages } from 'gt-next';
+import { msg, useMessages } from "@/lib/gt";
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';

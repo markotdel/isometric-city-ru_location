@@ -9,14 +9,15 @@
     "de",
     "pt-BR",
     "it",
-    "tr"
+    "tr",
+    "ru"
   ],
-  "defaultLocale": "en",
+  "defaultLocale": "ru",
   "files": {
     "gt": {
       "output": "public/_gt/[locale].json"
     }
   },
   "framework": "next-app",
-  "_versionId": "24641172c441000198e9fa7f8457d45613e4299f6062e174f5b5c406872d8a33"
+  "_versionId": "407390a869ef1ac5a5a3194f31be16564a715ffde3cb8ed6319cee05d6a051d5"
 }
